@@ -29,3 +29,27 @@ output "alb_public_ip" {
 output "cic_nsip" {
   value = module.azure_ilb_nsip
 }
+
+output "snips" {
+  value = local.snip_addresses
+}
+
+output "openshift_resource_group" {
+  value = data.azurerm_virtual_network.openshift-vnet.resource_group_name
+}
+
+output "openshift_vnet_name" {
+  value = data.azurerm_virtual_network.openshift-vnet.name
+}
+
+output "openshift_worker_subnet" {
+  value = data.azurerm_subnet.openshift-worker-subnet.name
+}
+
+output "openshift_master_subnet" {
+  value = data.azurerm_subnet.openshift-master-subnet.name
+}
+
+output "ha_route_table_id" {
+  value = module.ha_openshift_route_table[0].route_table_id
+}
