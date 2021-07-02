@@ -11,10 +11,9 @@ az network vnet subnet update -n $worker_subnet --vnet-name $vnet_name -g $resou
 variable_name=$(az network nic list -g $resource_group --query "[?contains(name,'worker')].name")
 for i in $variable_name; do
     if [[ $i =~ "worker" ]]; then
-        echo "It's there!"
         i=`echo $i | tr -d "\""`
         i=`echo $i | tr -d "\,"`
         az network nic update -n $i -g $resource_group --ip-forwarding true
     fi
 done
-
+echo "Configuration Done"

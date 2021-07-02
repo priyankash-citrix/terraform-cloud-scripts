@@ -96,7 +96,7 @@ resource "azurerm_virtual_network_peering" "ha-to-openshift-vnet-peering" {
   name                      = "peer1to2"
   resource_group_name       = azurerm_resource_group.terraform-resource-group.name
   virtual_network_name      = azurerm_virtual_network.terraform-virtual-network.name
-  remote_virtual_network_id = data.azurerm_virtual_network.openshift-vnet.id
+  remote_virtual_network_id = data.azurerm_virtual_network.openshift-vnet[0].id
 
   count = var.create_ha_for_openshift ? 1 : 0
 }
@@ -105,8 +105,8 @@ resource "azurerm_virtual_network_peering" "ha-to-openshift-vnet-peering" {
 # This will be created only when "create_ha_for_openshift" is set to "true".
 resource "azurerm_virtual_network_peering" "openshift-to-ha-vnet-peering" {
   name                      = "peer2to1"
-  resource_group_name       = data.azurerm_virtual_network.openshift-vnet.resource_group_name
-  virtual_network_name      = data.azurerm_virtual_network.openshift-vnet.name
+  resource_group_name       = data.azurerm_virtual_network.openshift-vnet[0].resource_group_name
+  virtual_network_name      = data.azurerm_virtual_network.openshift-vnet[0].name
   remote_virtual_network_id = azurerm_virtual_network.terraform-virtual-network.id
 
   count = var.create_ha_for_openshift ? 1 : 0
@@ -130,8 +130,8 @@ module "ha_openshift_route_table" {
   ubuntu_admin_user    = var.ubuntu_admin_user
   ssh_private_key_file = var.ssh_private_key_file
 
-  openshift_worker_subnet_prefix    = data.azurerm_subnet.openshift-worker-subnet.address_prefixes[0]
-  openshift_master_subnet_prefix    = data.azurerm_subnet.openshift-master-subnet.address_prefixes[0]
+  openshift_worker_subnet_prefix    = data.azurerm_subnet.openshift-worker-subnet[0].address_prefixes[0]
+  openshift_master_subnet_prefix    = data.azurerm_subnet.openshift-master-subnet[0].address_prefixes[0]
   openshift_route_address_prefixes  = local.openshift_cluster_host_network_list
   openshift_route_addresses_details = var.openshift_cluster_host_network_details
 
@@ -147,11 +147,11 @@ module "ha_openshift_route_table" {
 module "openshift_network_security_rule" {
   source = "./azure_network_security_rule"
 
-  resource_group_name = data.azurerm_network_security_group.openshift-nsg.resource_group_name
+  resource_group_name = data.azurerm_network_security_group.openshift-nsg[0].resource_group_name
   name                = "Allow_traffic_from_VPX_HA_SNIPs"
   #  source_address_prefixes = [element(azurerm_network_interface.terraform-adc-server-interface.*.private_ip_address, 1),element(azurerm_network_interface.terraform-adc-server-interface.*.private_ip_address,2)]
   source_address_prefixes     = local.snip_addresses
-  network_security_group_name = data.azurerm_network_security_group.openshift-nsg.name
+  network_security_group_name = data.azurerm_network_security_group.openshift-nsg[0].name
 
   count = var.create_ha_for_openshift ? 1 : 0
 

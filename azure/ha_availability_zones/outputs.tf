@@ -27,29 +27,25 @@ output "alb_public_ip" {
 }
 
 output "cic_nsip" {
-  value = module.azure_ilb_nsip
-}
-
-output "snips" {
-  value = local.snip_addresses
+  value = var.create_ILB_for_management ? module.azure_ilb_nsip : null
 }
 
 output "openshift_resource_group" {
-  value = data.azurerm_virtual_network.openshift-vnet.resource_group_name
+  value = var.create_ha_for_openshift ? data.azurerm_virtual_network.openshift-vnet[0].resource_group_name : null
 }
 
 output "openshift_vnet_name" {
-  value = data.azurerm_virtual_network.openshift-vnet.name
+  value = var.create_ha_for_openshift ? data.azurerm_virtual_network.openshift-vnet[0].name : null
 }
 
 output "openshift_worker_subnet" {
-  value = data.azurerm_subnet.openshift-worker-subnet.name
+  value = var.create_ha_for_openshift ? data.azurerm_subnet.openshift-worker-subnet[0].name : null
 }
 
 output "openshift_master_subnet" {
-  value = data.azurerm_subnet.openshift-master-subnet.name
+  value = var.create_ha_for_openshift ? data.azurerm_subnet.openshift-master-subnet[0].name : null
 }
 
 output "ha_route_table_id" {
-  value = module.ha_openshift_route_table[0].route_table_id
+  value = var.create_ha_for_openshift ? module.ha_openshift_route_table[0].route_table_id : null
 }
