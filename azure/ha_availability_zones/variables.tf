@@ -81,11 +81,11 @@ variable "create_ha_for_openshift" {
 
 variable "openshift_cluster_name" {
   description = "Name of the OpenShift cluster"
-  default     = "openshift"
+  default     = ""
 }
 
 variable "openshift_cluster_host_network_details" {
   description = "Details of OpenShift Host Network. Key is pod network prefix and Value is node IP"
   type        = map(string)
-  default     = {"10.128.2.0/23" : "10.0.32.4"} 
+  default     = {}
 }

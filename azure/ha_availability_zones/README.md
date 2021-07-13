@@ -247,3 +247,15 @@ chmod +x openshift.sh
 ./openshift.sh
 ```
 
+## Delete the deployment
+
+The entire deployment can be deleted if needed. Please do this if you absolutely want to delete the complete deployment that includes Citrix ADC VPX HA pair including it's workloads and other Networking elements like Subnets, VPC, VNET Peering etc.
+
+```
+./openshift.sh -o delete
+terraform refresh
+terraform destroy -auto-approve
+```
+
+**Note:** `terraform refresh` is needed to make sure terraform updates it's state information correctly so that the destroy happens in a correct order handling the dependencies for each entity.
+

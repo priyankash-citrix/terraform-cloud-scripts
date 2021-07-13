@@ -20,23 +20,13 @@ resource "azurerm_route" "route" {
   ]
 }
 
-/*resource "azurerm_subnet_route_table_association" "openshift-master-subnet-route-association" {
-  subnet_id      = data.azurerm_subnet.openshift-master-subnet.id
-  route_table_id = azurerm_route_table.ha-openshift-route-table.id
-}
-
-resource "azurerm_subnet_route_table_association" "openshift-worker-subnet-route-association" {
-  subnet_id      = var.openshift_worker_subnet_id
+resource "azurerm_subnet_route_table_association" "terraform-server-subnet-route-association" {
+  subnet_id      = var.ha_server_subnet.id
   route_table_id = azurerm_route_table.ha-openshift-route-table.id
 
   depends_on = [
     azurerm_route_table.ha-openshift-route-table
   ]
-}
-*/
-resource "azurerm_subnet_route_table_association" "terraform-server-subnet-route-association" {
-  subnet_id      = var.ha_server_subnet.id
-  route_table_id = azurerm_route_table.ha-openshift-route-table.id
 }
 
 resource "null_resource" "openshift_network_routes_in_ha" {
