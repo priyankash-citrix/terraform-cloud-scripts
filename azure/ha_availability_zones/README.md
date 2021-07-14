@@ -182,7 +182,7 @@ For more information on Cloud Native Deployments, please see [Citrix Ingress Con
 
 #### Prerequisites
 1. Terraform
-2. AWS CLI installed and configured using the command `aws configure`.
+2. Azure CLI installed and configured using the command `az login`.
 3. Kubernetes configuration utility `kubectl` installed
 4. OpenShift Cluster up and running in Azure platform.
 
