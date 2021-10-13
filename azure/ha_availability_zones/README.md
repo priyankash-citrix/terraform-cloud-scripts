@@ -5,14 +5,14 @@ This folder contains the configuration scripts to deploy
 * Two Citrix ADC instances configured in a High Availability setup.
 * A ubuntu bastion host with 1 NIC.
 
-# Resource group
+## Resource group
 
 All resources are deployed in a single resource group.
 
 The name of the resource group can be changed through the `resource_group_name` input variable.
 
 
-# Virtual Network configuration
+## Virtual Network configuration
 
 All network interfaces are deployed inside a single Virtual Network.
 
@@ -48,7 +48,7 @@ The server security group restricts traffic flow within the subnet itself.
 That means network interfaces belonging to this subnet will only be able to
 send and receive traffic only to other interfaces inside the subnet.
 
-# Citrix ADC configuration
+## Citrix ADC configuration
 
 The Citrix ADC instances are deployed as instances with 3 separate
 NICs each in a separate subnet. 
@@ -99,7 +99,7 @@ An SSH key is required when creating the ADC host.
 Password authentication is also allowed.
 Please choose a strong password to enhance security.
 
-# Bastion host
+## Bastion host
 
 Along with the Citrix ADC an ubuntu bastion host is deployed.
 
@@ -117,7 +117,22 @@ is removed the bastion host is the only other way to access the NSIP.
 This means all SSH and NITRO API calls will have to be executed from
 the bastion host.
 
-# Cloud Native Deployments
+## Explanation of the Input Variables
+
+| Variable                           | Description                          |
+| ---------------------------------- | ------------------------------------ |
+| `resource_group_name`              | Specify Azure Resource Group Name which will be used for deploying Citrix ADC VPX. |
+| `location`                         | Specify Azure Region name to be used for Citrix ADC VPX.                     |
+| `virtual_network_address_space`    | Specify the CIDR block to be used for Azure VNet.                            |
+| `management_subnet_address_prefix` | Specify the CIDRs for the Management Subnet.                                 |
+| `client_subnet_address_prefix`     | Specify the CIDR  for the Client Subnet.                                     |
+| `server_subnet_address_prefix`     | Specify the CIDRs for the Server Subnet.                                     |
+| `adc_admin_password`               | Password to be configured on Citrix ADC VPX.                                 |
+| `controlling_subnet`               | Specify the CIDR which will have access to the deployed Citrix ADC Instances |
+
+# Create VPX HA across Availability Zones for Cloud Native Deployments
+
+## For Kubernetes Cluster
 
 For Cloud Native Deployments where the use case is that a Citrix ADC VPX outside the Kubernetes cluster acts as Ingress, please set the variable `create_ILB_for_management` to `true`
 
@@ -136,3 +151,111 @@ create_ILB_for_management=true
 ```
 
 For more information on Cloud Native Deployments, please see [Citrix Ingress Controller GitHub](https://github.com/citrix/citrix-k8s-ingress-controller)
+
+## For Openshift Cluster
+
+This terraform can also be used to deploy Citrix ADC VPX in HA-INC mode for an OpenShift Cluster. For this you need to provide some additional parameter related to the OpenShift cluster deployed on Azure.
+
+### High Level Additonal Configuration Entities created by the Terraform
+
+#### Networking
+1. VNET Peering between VNet of VPX HA and VNet of OpenShift Cluster.
+2. Route table and routes for VPX HA to reach pod network of OpenShift Cluster.
+
+#### Citrix ADC
+1. Routes in ADC VPX for reaching Openshift worker subnet via Server subnet of VPX HA.
+2. Routes in ADC VPX for reaching Openshift pod network via Server subnet of VPX HA.
+
+#### Openshift Cluster
+1. Network security rule in Network security group of openshift cluster for allowing traffic from ADC VPX SNIPs.
+
+### High Level Additonal Configuration Entities created by the Bash script.
+As the OpenShift cluster is already created by `openshift-installer` before running this terraform, there are few configuration which can't be done with the terraform. For this we have provided one bash script. Please run the bash script after running terraform for doing rest of the required configuration.
+
+Following configuration will be done by Bash script:
+1. OpenShift worker and master subnet association with the route table created for HA and pod network of OpenShift.
+2. Enables `IP Fordwording` in all the worker node VM's NIC to allow traffic from HA to the pod network of the Openshift Cluster.
+
+For more information on Cloud Native Deployments, please see [Citrix Ingress Controller GitHub](https://github.com/citrix/citrix-k8s-ingress-controller)
+
+### Steps to Deploy:
+
+#### Prerequisites
+1. Terraform
+2. Azure CLI installed and configured using the command `az login`.
+3. Kubernetes configuration utility `kubectl` installed
+4. OpenShift Cluster up and running in Azure platform.
+
+#### Clone the GitHub Repo
+
+```
+git clone https://github.com/citrix/terraform-cloud-scripts.git
+cd terraform-cloud-scripts/terraform-cloud-scripts/azure/ha_availability_zones
+```
+
+#### Initialise the terraform deployment
+
+The following is a sample input variable file that contains the input variables to run the entire deployment.
+
+##### Sample Input Variables
+
+```
+resource_group_name="priyanka-ha-inc-test"
+location="southeastasia"
+virtual_network_address_space="1.1.0.0/16"
+management_subnet_address_prefix="1.1.1.0/24"
+client_subnet_address_prefix="1.1.2.0/24"
+server_subnet_address_prefix="1.1.3.0/24"
+adc_admin_password="CitrixADC"
+controlling_subnet="2.2.2.2"
+create_ILB_for_management=true
+create_ha_for_openshift=true
+openshift_cluster_name = "cnn-oc-cluster-1234"
+openshift_cluster_host_network_details={"10.128.2.0/23": "10.0.32.4", "10.129.2.0/23": "10.0.32.5", "10.131.0.0/23": "10.0.32.6"}
+```
+**Important:** Make sure you input values in the file in accordance with your deployment topology.
+
+##### Explanation of the Additional Input Variables
+
+| Variable                               | Description                          |
+| -------------------------------------- | ------------------------------------ |
+| create_ILB_for_management              | Enable this to configure ILB whose IP will be used by CIC for configuring Citrix ADC VPX HA |
+| create_ha_for_openshift                | Set this to `true` as we are creating HA for OpenShift cluster. |
+| openshift_cluster_name                 | Provide Name of you Openshift Cluster deployed in Azure. |
+| openshift_cluster_host_network_details | Provide details of Openshift Pod network and node IPs. This should be list of dictionaries and the key for each dictionary will be pod network prefix and value should be OpenShift cluster node IP. |
+
+**Important:** After creating a variable file in accordance with your requirements, ensure to name the file with the suffix `.auto.tfvars`. For example, `my-vpx-ha-deployment.auto.tfvars`
+
+After you create an input variable file, you can initialize the terraform using the following command.
+
+```
+terraform init
+```
+
+#### Terraform Plan and Apply
+
+```
+terraform plan
+terraform apply -auto-approve
+```
+
+#### Run the bash scipt:
+Run the bash scipt for additinal configuration inside the same folder:
+
+```
+chmod +x openshift.sh
+./openshift.sh
+```
+
+## Delete the deployment
+
+The entire deployment can be deleted if needed. Please do this if you absolutely want to delete the complete deployment that includes Citrix ADC VPX HA pair including it's workloads and other Networking elements like Subnets, VPC, VNET Peering etc.
+
+```
+./openshift.sh -o delete
+terraform refresh
+terraform destroy -auto-approve
+```
+
+**Note:** `terraform refresh` is needed to make sure terraform updates it's state information correctly so that the destroy happens in a correct order handling the dependencies for each entity.
+
