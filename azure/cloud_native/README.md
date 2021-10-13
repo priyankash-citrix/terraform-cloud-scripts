@@ -20,82 +20,77 @@ The name of the resource group can be changed through the `resource_group_name` 
 
 #### Virtual Network configuration
 
-All network interfaces are deployed inside a single Virtual Network.
-
-There are 3 subnets:
+All network interfaces are deployed inside a single Virtual Network. There are 3 subnets:
 
 * Management
 * Client
 * Server
 
-The Management subnet contains the ADC management interface where the NSIP address is assigned
+The Management subnet contains the ADC management interface to which the NSIP address is assigned
 and the interface of the ubuntu bastion host.
 
-The Client subnet contains the ADC client interface where the VIP address is assigned.
+The Client subnet contains the ADC client interface to which the VIP address is assigned.
 
-The server subnet contains the ADC server interface where the SNIP is assigned.
-Any backed service hosts deployed will need to have an interface defined within this subnet
+The server subnet contains the ADC server interface to which the SNIP is assigned.
+Any backed service hosts deployed must have an interface defined within this subnet
 so that the ADC can communicate with them through the SNIP address.
 
 #### Security groups
 
-There are 3 security groups each attached to a single subnet.
+There are three security groups each attached to a single subnet.
 
 The management security group contains a security rule which
-allows ssh, http and https inbound traffic
+allows SSH, HTTP and HTTPS inbound traffic
 from the controlling subnet.
 
 The controlling subnet can be as restrictive as a single /32 ip address
 or as permissive as 0.0.0.0/0.
 
-The client security group allows http and https access from the internet.
+The client security group allows HTTP and HTTPS access from the internet.
 
-The server security group restricts traffic flow within the subnet itself.
+The server security group restricts traffic flow within the subnet.
 That means network interfaces belonging to this subnet will only be able to
 send and receive traffic only to other interfaces inside the subnet.
 
 #### Citrix ADC configuration
 
-The Citrix ADC instances are deployed as instances with 3 separate
-NICs each in a separate subnet. 
+The Citrix ADC instances are deployed as instances with three separate NICs each in a separate subnet. 
 
-The ADC bootstrap code will assign ip addresses to each interface
-according to the ip addresses assigned by Azure.
+The ADC bootstrap code will assign IP addresses to each interface
+according to the IP addresses assigned by Azure.
 
 The management network interface is where the NSIP address is assigned.
 There are no additional security rules attached to the interface.
 This means that access is only restricted by the subnet attached security group,
-which allows access from the controlling subnet for ssh, http and https.
+which allows access from the controlling subnet for SSH, HTTP and HTTPS.
 
-There is a public ip associated with this interface so that it is reachable from
+There is a public IP address associated with this interface so that it is reachable from
 outside the Virtual Network.
 
-For enhanced security one could remove the public ip.
-In such case the management interface will only be accessible from within the
-Virtual Network.
-This means that all ssh connections and NITRO API calls will have to go through
-the bastion host.
+To enhanced security one could remove the public ip.
+In such case, the management interface will only be accessible from within the Virtual Network.
+This means that all SSH connections and NITRO API calls will have to go through the bastion host.
 
 The client network interface is where the VIP address is assigned.
-This private VIP address is not used for incoming traffic since we are in an HA setup.
+This private VIP address is not used for incoming traffic since we are in an HA mode.
 
-Instead the ip address that will be used for traffic is the public ip address of the
-Azure Load Balancer. This address must be assigned to a Vserver (LB/CS) with
-functioning backend services. From that point on the ALB public ip address will
-start load balancing the instances.
+Instead, the IP address that is used for traffic is the public IP address of the Azure Load Balancer.
+This address must be assigned to a Vserver (LB/CS) with functioning backend services. 
+From that point on the ALB public ip address will start load balancing the instances.
+
 You can find a sample LB configuration in this [folder](../simple_lb_ha)
 
-In the case of a fail over the ALB will detect through the probe one node going down
-and the secondary taking over at which point it will starting sending traffic to the
+In the case of a fail over the ALB detects the details through the probe one node going down
+and the secondary taking over at which point it starts sending traffic to the
 new primary node. Traffic may be impacted for a few seconds until the ALB probe
 can determine the functional state of the HA pair.
 
 There are no additional security rules attached to the interface.
 This means access is only restricted by the subnet attached security group,
-which allows http and https traffic from anywhere.
+which allows HTTP and HTTPS traffic from anywhere.
 
 The server network interface is where the SNIP address is assigned.
-No public ip address is associated with this interface.
+No public IP address is associated with this interface.
 There are no additional security rules attached to the interface.
 This means access is only restricted by the subnet attached security group,
 which only allows traffic from the subnet itself.
@@ -103,11 +98,11 @@ which only allows traffic from the subnet itself.
 An SSH key is required when creating the ADC host.
 
 Password authentication is also allowed.
-Please choose a strong password to enhance security.
+You must choose a strong password to enhance security.
 
 #### Bastion host
 
-Along with the Citrix ADC an ubuntu bastion host is deployed.
+Along with the Citrix ADC, an ubuntu bastion host is deployed.
 
 Its role is to provide access to the Virtual Network from
 a secured host.
@@ -115,32 +110,31 @@ a secured host.
 The host requires an SSH key for access.
 
 It has a single network interface which belongs to the management subnet.
-As such it can accessed form the controlling subnet.
+As such, it can be accessed form the controlling subnet.
 
-In case the public ip address associated with the ADC management network interface
+In case the public IP address associated with the ADC management network interface
 is removed the bastion host is the only other way to access the NSIP.
 
-This means all SSH and NITRO API calls will have to be executed from
-the bastion host.
+This means that all SSH and NITRO API calls will have to be executed from the bastion host.
 
 ## Explanation of the Input Variables
 
 | Variable                           | Description                          |
 | ---------------------------------- | ------------------------------------ |
-| `resource_group_name`              | Specify Azure Resource Group Name which will be used for deploying Citrix ADC VPX. |
+| `resource_group_name`              | Specify Azure Resource Group Name which is used for deploying Citrix ADC VPX. |
 | `location`                         | Specify Azure Region name to be used for Citrix ADC VPX.                     |
 | `virtual_network_address_space`    | Specify the CIDR block to be used for Azure VNet.                            |
 | `management_subnet_address_prefix` | Specify the CIDRs for the Management Subnet.                                 |
 | `client_subnet_address_prefix`     | Specify the CIDR  for the Client Subnet.                                     |
 | `server_subnet_address_prefix`     | Specify the CIDRs for the Server Subnet.                                     |
-| `adc_admin_password`               | Password to be configured on Citrix ADC VPX.                                 |
-| `controlling_subnet`               | Specify the CIDR which will have access to the deployed Citrix ADC Instances |
+| `adc_admin_password`               | Specify password to be configured on Citrix ADC VPX.                                 |
+| `controlling_subnet`               | Specify the CIDR which has access to the deployed Citrix ADC instances. |
 
 ## For Kubernetes Cluster
 
-For Cloud Native Deployments where the use case is that a Citrix ADC VPX outside the Kubernetes cluster acts as Ingress, please set the variable `create_ILB_for_management` to `true`
+For Cloud Native deployments, in which Citrix ADC VPX is outside the Kubernetes cluster acts as Ingress, please set the variable; `create_ILB_for_management` as `true`.
 
-Sample Terraform Variable file below
+The following is a sample Terraform Variable file:
 
 ```
 resource_group_name="my-ha-inc-rg"
@@ -153,41 +147,39 @@ adc_admin_password="<Provide a strong VPX Password>"
 controlling_subnet="<CIDR to allow Management Access>"
 ```
 
-For more information on Cloud Native Deployments, please see [Citrix Ingress Controller GitHub](https://github.com/citrix/citrix-k8s-ingress-controller)
+For more information on Cloud Native deployments, please see [Citrix Ingress Controller GitHub](https://github.com/citrix/citrix-k8s-ingress-controller).
 
 ## For Openshift Cluster
 
-This terraform can also be used to deploy Citrix ADC VPX in HA-INC mode for an OpenShift Cluster. For this you need to provide some additional parameter related to the OpenShift cluster deployed on Azure.
+This terraform can also be used to deploy Citrix ADC VPX in HA-INC mode for an OpenShift Cluster. For this you need to provide some additional parameters related to the OpenShift cluster deployed on Azure.
 
 ### High Level Additonal Configuration Entities created by the Terraform
 
 #### Networking
-1. VNET Peering between VNet of VPX HA and VNet of OpenShift Cluster.
-2. Route table and routes for VPX HA to reach pod network of OpenShift Cluster.
+1. VNET Peering between VNet of VPX HA and VNet of OpenShift cluster.
+2. Route table and routes for VPX HA to reach pod network of OpenShift cluster.
 
 #### Citrix ADC
-1. Routes in ADC VPX for reaching Openshift worker subnet via Server subnet of VPX HA.
-2. Routes in ADC VPX for reaching Openshift pod network via Server subnet of VPX HA.
+1. Routes in ADC VPX for reaching Openshift worker subnet through the Server subnet of VPX HA.
+2. Routes in ADC VPX for reaching Openshift pod network through the Server subnet of VPX HA.
 
 #### Openshift Cluster
 1. Network security rule in Network security group of openshift cluster for allowing traffic from ADC VPX SNIPs.
 
 ### High Level Additonal Configuration Entities created by the Bash script.
-As the OpenShift cluster is already created by `openshift-installer` before running this terraform, there are few configuration which can't be done with the terraform. For this we have provided one bash script. Please run the bash script after running terraform for doing rest of the required configuration.
+As the OpenShift cluster is already created by `openshift-installer` before running this terraform, there are some configuration which cannot be performed with the terraform. For this, a bash script is available. Run the bash script after running terraform for performing the rest of the required configurations.
 
-Following configuration will be done by Bash script:
+The following configurations is added by Bash script:
 1. OpenShift worker and master subnet association with the route table created for HA and pod network of OpenShift.
 2. Enables `IP Fordwording` in all the worker node VM's NIC to allow traffic from HA to the pod network of the Openshift Cluster.
-
-For more information on Cloud Native Deployments, please see [Citrix Ingress Controller GitHub](https://github.com/citrix/citrix-k8s-ingress-controller)
 
 ### Steps to Deploy:
 
 #### Prerequisites
-1. Terraform
-2. Azure CLI installed and configured using the command `az login`.
-3. Kubernetes configuration utility `kubectl` installed
-4. OpenShift Cluster up and running in Azure platform.
+1. Ensure that you have Terraform.
+2. Ensure that you have Azure CLI installed and configured using the command: `az login`.
+3. Ensure that you have Kubernetes configuration utility `kubectl` installed.
+4. Ensure that you have OpenShift cluster up and running in Azure platform.
 
 #### Clone the GitHub Repo
 
@@ -222,12 +214,12 @@ openshift_cluster_host_network_details={"10.128.2.0/23": "10.0.32.4", "10.129.2.
 
 | Variable                               | Description                          |
 | -------------------------------------- | ------------------------------------ |
-| create_ILB_for_management              | Enable this to configure ILB whose IP will be used by CIC for configuring Citrix ADC VPX HA |
-| create_ha_for_openshift                | Set this to `true` as we are creating HA for OpenShift cluster. |
-| openshift_cluster_name                 | Provide Name of you Openshift Cluster deployed in Azure. |
-| openshift_cluster_host_network_details | Provide details of Openshift Pod network and node IPs. This should be list of dictionaries and the key for each dictionary will be pod network prefix and value should be OpenShift cluster node IP. |
+| create_ILB_for_management              | Enable this to configure ILB whose IP will be used by CIC for configuring Citrix ADC VPX HA. |
+| create_ha_for_openshift                | Set this to `true` for creating HA for OpenShift cluster. |
+| openshift_cluster_name                 | Provide the name of the Openshift cluster deployed in Azure. |
+| openshift_cluster_host_network_details | Provide details of Openshift pod network and node IP addresses. This should be list of dictionaries and the key for each dictionary is pod network prefix and value should be OpenShift cluster node IP address. |
 
-**Important:** After creating a variable file in accordance with your requirements, ensure to name the file with the suffix `.auto.tfvars`. For example, `my-vpx-ha-deployment.auto.tfvars`
+**Important:** After creating a variable file in accordance with your requirements, ensure to name the file with the suffix `.auto.tfvars`. For example, `my-vpx-ha-deployment.auto.tfvars`.
 
 After you create an input variable file, you can initialize the terraform using the following command.
 
@@ -262,3 +254,4 @@ terraform destroy -auto-approve
 
 **Note:** `terraform refresh` is needed to make sure terraform updates it's state information correctly so that the destroy happens in a correct order handling the dependencies for each entity.
 
+For more information on Cloud Native Deployments, please see [Citrix Ingress Controller GitHub](https://github.com/citrix/citrix-k8s-ingress-controller)
